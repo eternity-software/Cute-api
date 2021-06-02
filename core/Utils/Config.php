@@ -12,6 +12,6 @@ class Config {
                 Answer::error($e->getMessage());
             }
         }
-        Answer::error("Конфигурационный файл по пути '{$path}' отсутствует");
+        Answer::error("Configuration file '{$path}' is missing");
     }
 }

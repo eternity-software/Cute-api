@@ -1,3 +1,4 @@
 .idea
 vendor
 projectname
+app/config/smtp_mail.json

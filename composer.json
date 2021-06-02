@@ -7,7 +7,10 @@
         }
     ],
     "require": {
-      "ext-json": "*"
+        "ext-json": "*",
+        "ext-pdo": "*",
+        "ext-mbstring": "*",
+        "phpmailer/phpmailer": "^6.4"
     },
     "autoload": {
         "psr-4": {

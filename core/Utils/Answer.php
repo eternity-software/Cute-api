@@ -3,8 +3,9 @@
 namespace Core\Utils;
 
 class Answer {
-    public static $place = [];
-    public static $debug = true;
+    private static array $place = [];
+    public static array $warnings = [];
+    public static bool $debug = true;
 
     public static function setup($controller, $method){
         self::$place = [
@@ -14,23 +15,33 @@ class Answer {
     }
 
     public static function success($data = []){
+        header("Content-Type: application/json; charset=utf-8");
         $result = [
             "type" => "success",
+            "warnings" => self::$warnings,
             "data" => $data
         ];
 
         exit(json_encode($result, JSON_PRETTY_PRINT + JSON_UNESCAPED_UNICODE));
     }
 
-    public static function error($data){
-        self::$place['debug_backtrace'] = debug_backtrace();
-
+    public static function error($error_msg, $debug_turn = true){
+        header("Content-Type: application/json; charset=utf-8");
         $result = [
             "type" => "error",
-            "place" => self::$place,
-            "data" => $data
+            "warnings" => self::$warnings,
+            "data" => [
+                "messages" => $error_msg
+            ]
         ];
 
+        if(self::$place !== []) $result['place'] = self::$place;
+        if(self::$debug && $debug_turn) $result['debug_backtrace'] = debug_backtrace();
+
         exit(json_encode($result, JSON_PRETTY_PRINT + JSON_UNESCAPED_UNICODE));
+    }
+
+    public static function warning($data){
+        self::$warnings[] = $data;
     }
 }
