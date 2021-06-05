@@ -20,6 +20,7 @@ class Field {
         $min = (isset($this->options['min'])) ? $this->options['min'] : 0;
         $max = (isset($this->options['max'])) ? $this->options['max'] : 0;
         $required = (isset($this->options['required'])) ? $this->options['required'] : false;
+        $list = (isset($this->options['list'])) ? $this->options['list'] : false;
 
         // Min - max
         if($type !== "int") {
@@ -32,8 +33,11 @@ class Field {
         // Email validate
         if($this->value != null && $type === "email" && !filter_var($this->value, FILTER_VALIDATE_EMAIL))  $errors[] = "Field '{$this->name}' is not a email";
 
+        // Enum validate
+        if($type === "enum" && $list && !array_search($this->value, $list)) $errors[] = "Field '{$this->name}' is invalid";
+
         // Required
-        if($required && $this->value == null) $errors[] = "Field '{$this->name}' is required!";
+        if($required && ($this->value == null || $this->value == false)) $errors[] = "Field '{$this->name}' is required!";
 
         // Result
         if($errors != []) Answer::error($errors);

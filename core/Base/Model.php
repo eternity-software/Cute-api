@@ -11,5 +11,6 @@ abstract class Model {
         $this->db = new Connection($db_config_name);
     }
 
+    // Получение выходных данных модели
     public function get_data(){}
 }

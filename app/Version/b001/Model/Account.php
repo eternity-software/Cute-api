@@ -5,19 +5,19 @@ namespace App\Version\b001\Model;
 use Core\Utils\Answer;
 use Core\Utils\Mail;
 use Core\Utils\Random;
+use Core\Utils\RequestOption;
 
 class Account extends \Core\Base\Model {
     protected array $temp_account = [];
     protected string $temp_session;
 
-    public function __construct($db_config_name = "db") {
-        parent::__construct($db_config_name);
-        $this->temp_account = $this->get(true);
+    public function get_data() {
+        return $this->temp_account;
     }
 
     private function create_session($account_id){
         $session_key = hash("sha256", time() * $account_id);
-        $session_time = time() + 24 * 30 * 12;
+        $session_time = time() + 3600 * 24 * 30 * 12;
         $ip = $_SERVER["REMOTE_ADDR"];
 
         if(!$this->db->execute("INSERT INTO account_session (account_id, session_key, session_time, ip) VALUE (?, ?, ?, ?)", [$account_id, $session_key, $session_time, $ip])){
@@ -37,6 +37,18 @@ class Account extends \Core\Base\Model {
         if(!Mail::send($email, 'Activate account', 'Your code: ' . $codeConfirm)) {
             Answer::error(["Letter was not sent!"]);
         }
+    }
+
+    public function verify_auth() : array{
+        $this->temp_session = RequestOption::get("session");
+
+        if(!($query = $this->db->query("SELECT * FROM view_account_by_session WHERE session_key = ?", [$this->temp_session]))) Answer::error(["Authorization unsuccessful"]);
+        $this->temp_account = (count($query) > 0) ? $query[0] : [];
+
+        if($this->temp_account['active'] != "y") Answer::error(["Account is not active!"], ["active" => $this->temp_account['active']]);
+        if($this->temp_account['session_time'] < time()) Answer::error(["This session is expired!"]);
+
+        return $this->temp_account;
     }
 
     public function auth($login, $password){
@@ -73,63 +85,37 @@ class Account extends \Core\Base\Model {
     }
 
     public function sendConfirm(){
-        if($this->temp_account === []){
-            Answer::error(["Auth failed!"]);
-        }
-
+        $this->verify_auth();
         $this->create_code($this->temp_account['id'], $this->temp_account['email']);
-
-        Answer::success([]);
+        Answer::success();
     }
 
     public function confirm($code){
-        if($this->temp_account === []){
-            Answer::error(["Auth failed!"]);
-        }
-        $accound_id = $this->temp_account['id'];
-        if(!$this->db->query("SELECT id FROM account_activation_code WHERE code = ? AND account_id = ? LIMIT 1", [$code, $accound_id])){
+        $this->verify_auth();
+        $account_id = $this->temp_account['id'];
+        if(!$this->db->query("SELECT id FROM account_activation_code WHERE code = ? AND account_id = ?", [$code, $account_id])){
             Answer::error(["Incorrect code"]);
         }
-        if(!$this->db->execute("DELETE FROM account_activation_code WHERE code = ? AND account_id = ?", [$code, $accound_id])){
+        if(!$this->db->execute("DELETE FROM account_activation_code WHERE code = ? AND account_id = ?", [$code, $account_id])){
             Answer::error(["Unknown error deactivate code"]);
         }
-        if(!$this->db->execute("UPDATE account SET active = 'y' WHERE id = ?", [$accound_id])){
+        if(!$this->db->execute("UPDATE account SET active = 'y' WHERE id = ?", [$account_id])){
             Answer::error(["Unknown error wrote database"]);
         }
 
-        Answer::success([]);
+        Answer::success();
     }
 
-    public function get($inner = false) : array{
-        // Проверяем, есть ли сессия
-        if(empty($_GET["session"])){
-            if($inner){
-                return [];
-            } else {
-                Answer::error(["Key session is missing"]);
-            }
-        }
-        $this->temp_session = $_GET["session"];
-
-        if(!($query = $this->db->query("SELECT account.*, account_session.session_time FROM account, account_session WHERE account_session.session_key = ? AND account.id = account_session.account_id LIMIT 1", [$this->temp_session])[0])){
-            Answer::error(["This session is not registered!"]);
-        }
-        if($query['session_time'] < time()){
-            Answer::error(["This session is fuu..!"]);
-        }
-        if(!$inner){
-            Answer::success(["account" => $query]);
-        } else {
-            return $query;
-        }
+    public function get(){
+        $this->verify_auth();
+        Answer::success(["account" => $this->temp_account]);
     }
 
     public function edit($fields){
         if($fields === []) Answer::error(["Fields is clear!"]);
 
-        if($this->temp_account === []){
-            Answer::error(["Auth failed!"]);
-        }
+        $this->verify_auth();
+
         $sql_to_execute = "UPDATE account SET ";
         $array_to_execute = [];
         $i = 0;
@@ -142,18 +128,20 @@ class Account extends \Core\Base\Model {
         if(!$this->db->execute($sql_to_execute, $array_to_execute)){
             Answer::error(["Unknown error changes tables!"]);
         }
-        Answer::success([]);
+        Answer::success();
     }
 
     public function logout(){
-        if($this->temp_account === []){
-            Answer::error(["Authorization unsuccessful"]);
-        }
+        $this->verify_auth();
+        if(!$this->db->execute("UPDATE account_session SET active = 'n' WHERE session_key = ?", [$this->temp_session])) Answer::error(["Unknown database error"]);
+        Answer::success();
+    }
 
-        if(!$this->db->execute("UPDATE account_session SET active = 'n' WHERE session_key = ?", [$this->temp_session])){
-            Answer::error(["Unknown database error"]);
-        }
-
-        Answer::success([]);
+    public function getConversations(){
+        $this->verify_auth();
+        $conversations = $this->db->query("SELECT view_conversations.* FROM view_conversations INNER JOIN conversation_member member ON member.account_id = ? WHERE view_conversations.id = member.conversation_id");
+        Answer::success([
+            "conversations" => $conversations
+        ]);
     }
 }

@@ -25,13 +25,14 @@ class Answer {
         exit(json_encode($result, JSON_PRETTY_PRINT + JSON_UNESCAPED_UNICODE));
     }
 
-    public static function error($error_msg, $debug_turn = true){
+    public static function error($error_msg, $additional = [], $debug_turn = true){
         header("Content-Type: application/json; charset=utf-8");
         $result = [
             "type" => "error",
             "warnings" => self::$warnings,
             "data" => [
-                "messages" => $error_msg
+                "messages" => $error_msg,
+                "additional" => $additional
             ]
         ];
 

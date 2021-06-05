@@ -2,29 +2,29 @@
 
 namespace App\Version\b001\Controller;
 use Core\Utils\Field;
+use Core\Utils\RequestOption;
 
 class Account extends \Core\Base\Controller {
     public function __construct() {
-        parent::__construct();
         $this->model = new \App\Version\b001\Model\Account();
     }
 
     public function create(){
-        $email = (new Field("Email", $this->getOption('email'), [
+        $email = (new Field("Email", RequestOption::get('email'), [
             "type" => "email",
             "min" => 4,
             "max" => 120,
             "required" => true
         ]))->check();
 
-        $login = (new Field("Login", $this->getOption('login'), [
+        $login = (new Field("Login", RequestOption::get('login'), [
             "type" => "text",
             "min" => 4,
             "max" => 45,
             "required" => true
         ]))->check();
 
-        $password = (new Field("Password", $this->getOption('password'), [
+        $password = (new Field("Password", RequestOption::get('password'), [
             "type" => "text",
             "min" => 6,
             "max" => 45,
@@ -39,7 +39,7 @@ class Account extends \Core\Base\Controller {
     }
 
     public function confirm(){
-        $code = (new Field("Code", $this->getOption('code'), [
+        $code = (new Field("Code", RequestOption::get('code'), [
             "type" => "int",
             "min" => 6,
             "max" => 6,
@@ -50,14 +50,14 @@ class Account extends \Core\Base\Controller {
     }
 
     public function auth(){
-        $login = (new Field("Login", $this->getOption('login'), [
+        $login = (new Field("Login", RequestOption::get('login'), [
             "type" => "text",
             "min" => 4,
             "max" => 45,
             "required" => true
         ]))->check();
 
-        $password = (new Field("Password", $this->getOption('password'), [
+        $password = (new Field("Password", RequestOption::get('password'), [
             "type" => "text",
             "min" => 6,
             "max" => 45,
@@ -72,28 +72,28 @@ class Account extends \Core\Base\Controller {
     }
 
     public function edit(){
-        $display_name = (new Field("Name", $this->tryGetOption('display_name'), [
+        $display_name = (new Field("Name", RequestOption::tryGet('display_name'), [
             "type" => "text",
             "min" => 2,
             "max" => 60,
             "required" => false
         ]))->check();
 
-        $display_surname = (new Field("Surname", $this->tryGetOption('display_surname'), [
+        $display_surname = (new Field("Surname", RequestOption::tryGet('display_surname'), [
             "type" => "text",
             "min" => 2,
             "max" => 60,
             "required" => false
         ]))->check();
 
-        $display_status_text = (new Field("Surname", $this->tryGetOption('display_status_text'), [
+        $display_status_text = (new Field("Surname", RequestOption::tryGet('display_status_text'), [
             "type" => "text",
             "min" => 2,
             "max" => 120,
             "required" => false
         ]))->check();
 
-        $bio = (new Field("Surname", $this->tryGetOption('bio'), [
+        $bio = (new Field("Surname", RequestOption::tryGet('bio'), [
             "type" => "text",
             "min" => 2,
             "max" => 300,
