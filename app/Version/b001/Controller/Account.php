@@ -112,4 +112,8 @@ class Account extends \Core\Base\Controller {
     public function logout(){
         $this->model->logout();
     }
+
+    public function getConversations(){
+        $this->model->getConversations();
+    }
 }
