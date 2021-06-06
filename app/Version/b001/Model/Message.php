@@ -51,7 +51,7 @@ class Message extends \Core\Base\Model {
 
     public function send($conversation_id, $text){
         $account_id = $this->temp_account['id'];
-        if(!($query = $this->db->query("SELECT id FROM view_conversation_member WHERE account_id = ?", [$account_id]))){
+        if(!($query = $this->db->query("SELECT id FROM view_conversation_member WHERE account_id = ? AND conversation_id = ?", [$account_id, $conversation_id]))){
             Answer::error(["Member is missing"]);
         }
         $member_id = $query['id'];
