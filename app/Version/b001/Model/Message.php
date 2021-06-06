@@ -54,7 +54,7 @@ class Message extends \Core\Base\Model {
         if(!($query = $this->db->query("SELECT id FROM view_conversation_member WHERE account_id = ? AND conversation_id = ?", [$account_id, $conversation_id]))){
             Answer::error(["Member is missing"]);
         }
-        $member_id = $query['id'];
+        $member_id = $query[0]['id'];
         $time = time();
         if(!$this->db->execute("INSERT INTO conversation_message (member_id, conversation_id, text, time) VALUE (?, ?, ?, ?)", [$member_id, $conversation_id, $text, $time])){
             Answer::error(["Unknown error sending message"]);

@@ -139,7 +139,7 @@ class Account extends \Core\Base\Model {
 
     public function getConversations(){
         $this->verify_auth();
-        $conversations = $this->db->query("SELECT view_conversations.* FROM view_conversations INNER JOIN conversation_member member ON member.account_id = ? WHERE view_conversations.id = member.conversation_id");
+        $conversations = $this->db->query("SELECT view_conversations.* FROM view_conversations INNER JOIN conversation_member member ON member.account_id = ? WHERE view_conversations.id = member.conversation_id", [$this->temp_account['id']]);
         Answer::success([
             "conversations" => $conversations
         ]);
