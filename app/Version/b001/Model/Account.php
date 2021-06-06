@@ -39,13 +39,13 @@ class Account extends \Core\Base\Model {
         }
     }
 
-    public function verify_auth() : array{
+    public function verify_auth($active = true) : array{
         $this->temp_session = RequestOption::get("session");
 
         if(!($query = $this->db->query("SELECT * FROM view_account_by_session WHERE session_key = ?", [$this->temp_session]))) Answer::error(["Authorization unsuccessful"]);
         $this->temp_account = (count($query) > 0) ? $query[0] : [];
 
-        if($this->temp_account['active'] != "y") Answer::error(["Account is not active!"], ["active" => $this->temp_account['active']]);
+        if($this->temp_account['active'] != "y" && $active) Answer::error(["Account is not active!"], ["active" => $this->temp_account['active']]);
         if($this->temp_account['session_time'] < time()) Answer::error(["This session is expired!"]);
 
         return $this->temp_account;
@@ -85,13 +85,13 @@ class Account extends \Core\Base\Model {
     }
 
     public function sendConfirm(){
-        $this->verify_auth();
+        $this->verify_auth(false);
         $this->create_code($this->temp_account['id'], $this->temp_account['email']);
         Answer::success();
     }
 
     public function confirm($code){
-        $this->verify_auth();
+        $this->verify_auth(false);
         $account_id = $this->temp_account['id'];
         if(!$this->db->query("SELECT id FROM account_activation_code WHERE code = ? AND account_id = ?", [$code, $account_id])){
             Answer::error(["Incorrect code"]);
