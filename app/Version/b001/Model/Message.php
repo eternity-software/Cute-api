@@ -19,8 +19,9 @@ class Message extends \Core\Base\Model {
         }
         $conversation_id = $this->db->lastInsertId();
         if(!$this->db->execute("INSERT INTO conversation_member (conversation_id, account_id, type) VALUE (?, ?, ?)", [$conversation_id, $creator_id, "creator"])){
-            Answer::error(["Error wrote new conversation in database"]);
+            Answer::error(["Error wrote new member in database"]);
         }
+        $this->send($conversation_id, "Chat {$title} is created!");
         Answer::success();
     }
 
