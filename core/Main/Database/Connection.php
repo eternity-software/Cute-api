@@ -6,17 +6,34 @@ use Core\Utils\Config;
 use PDO;
 
 class Connection {
+    private static $instance;
     private PDO $pdo;
+    private string $dbname;
 
-    public function __construct($config_name = "db") {
+    /**
+     * Получаем эземпляр класса
+     * @param string $config_name
+     * @return Connection
+     */
+    public static function getInstance(string $config_name = "db"): Connection {
+        if(!(self::$instance instanceof self)){
+            self::$instance = new self($config_name);
+        }
+        return self::$instance;
+    }
+
+    private function __construct($config_name) {
+        // Получаем конфиг подключения к БД
+        $config = Config::load($config_name);
+        // Записываем имя БД
+        $this->dbname = $config['dbname'];
         try{
             $opt = [
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
             ];
-            $config = Config::load($config_name);
-            $this->pdo = new PDO($config['driver'].':host='.$config['host'].';dbname='.$config['dbname'].';charset='.$config['charset'], $config['user'], $config['password'], $opt);
+            $this->pdo = new PDO($config['driver'].':host='.$config['host'].';dbname='.$this->dbname.';charset='.$config['charset'], $config['user'], $config['password'], $opt);
         }catch (\PDOException $e){
-            Answer::error("Database '{$config['dbname']}' {$e->getMessage()}");
+            Answer::error("Database '{$this->dbname}' {$e->getMessage()}");
         }
     }
 
@@ -33,6 +50,14 @@ class Connection {
             return true;
         }
         return false;
+    }
+
+    public function getTableStatus($table_name): array{
+        return $this->query("SHOW TABLE STATUS FROM `{$this->dbname}` WHERE `name` LIKE ?", [$table_name]);
+    }
+
+    public function setAutoIncrementTable($table_name, $auto_increment = 0): bool{
+        return $this->execute("ALTER TABLE {$table_name} AUTO_INCREMENT = ?", [$auto_increment]);
     }
 
     public function lastInsertId(): string {

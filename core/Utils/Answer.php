@@ -3,30 +3,20 @@
 namespace Core\Utils;
 
 class Answer {
-    private static array $place = [];
     public static array $warnings = [];
     public static bool $debug = true;
 
-    public static function setup($controller, $method){
-        self::$place = [
-            "controller" => $controller,
-            "method" => $method
-        ];
-    }
-
-    public static function success($data = []){
-        header("Content-Type: application/json; charset=utf-8");
+    public static function success($data = []): array {
         $result = [
             "type" => "success",
             "warnings" => self::$warnings,
             "data" => $data
         ];
 
-        exit(json_encode($result, JSON_PRETTY_PRINT + JSON_UNESCAPED_UNICODE));
+        return $result;
     }
 
-    public static function error($error_msg, $additional = [], $debug_turn = true){
-        header("Content-Type: application/json; charset=utf-8");
+    public static function error($error_msg, $additional = [], $debug_turn = true): array {
         $result = [
             "type" => "error",
             "warnings" => self::$warnings,
@@ -36,13 +26,21 @@ class Answer {
             ]
         ];
 
-        if(self::$place !== []) $result['place'] = self::$place;
         if(self::$debug && $debug_turn) $result['debug_backtrace'] = debug_backtrace();
 
-        exit(json_encode($result, JSON_PRETTY_PRINT + JSON_UNESCAPED_UNICODE));
+        return $result;
+    }
+
+    public static function criticalError($error_msg, $additional = [], $debug_turn = true){
+        self::send(self::error($error_msg, $additional, $debug_turn));
     }
 
     public static function warning($data){
         self::$warnings[] = $data;
+    }
+
+    public static function send($result){
+        header("Content-Type: application/json; charset=utf-8");
+        exit(json_encode($result, JSON_PRETTY_PRINT + JSON_UNESCAPED_UNICODE));
     }
 }

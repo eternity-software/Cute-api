@@ -2,44 +2,53 @@
 
 namespace Core\Main\Router;
 
+use Core\Base\Controller;
 use Core\Utils\Answer;
 
 class Router {
 
     /**
-     * Метод для получения запрашевоемого имени контроллера и метода
-     * @return array
+     * Список обрабатываемых страниц
+     * @var array
      */
-    private static function getTempData() : array{
-        $boom_url = explode(".", $_SERVER["REQUEST_URI"], 2);
-        $controller_name = $boom_url[0];
-        $temp_method = explode("?", $boom_url[1], 2)[0];
+    protected static array $routes = [];
 
-        return [
-            $controller_name,
-            $temp_method
+    /**
+     * Метод добавления доступных страниц
+     * @param string $version
+     * @param string $request
+     * @param string $method
+     * @param Controller $controller
+     * @param string $action
+     * @param array $options
+     */
+    public static function addRoute(string $request, string $method, Controller $controller, string $action, string $access_level, array $options = []){
+        self::$routes[$request] = [
+            "method" => strtolower($method),
+            "controller" => $controller,
+            "action" => $action,
+            "access_level" => strtolower($access_level),
+            "options" => $options
         ];
     }
 
     /**
      * Метод для получения текущего роута
-     * @param $version
      * @return Route
      */
-    public static function getRoute($version) : Route {
-        list($controller_name, $temp_method) = self::getTempData();
-        // (От - до) firstLevel - FirstLevel
-        $temp_controller = mb_convert_case(trim($controller_name, "/"), MB_CASE_TITLE, "UTF-8");
-        // Проверяем существует ли запрашиваемый класс
-        $class_name = "\\App\\Version\\{$version}\\Controller\\{$temp_controller}";
-        if(!class_exists($class_name)){
-            Answer::error("Request controller '{$controller_name}' is missing. Check documentation for cute api ver. {$version}!");
+    public static function dispatch(): Route{
+        // Получаем запрашиваемые контроллер и метод
+        $temp_request = trim(parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH), "/");
+        // Определяем текущий метод запроса
+        $temp_method = strtolower($_SERVER["REQUEST_METHOD"]);
+        foreach (self::$routes as $request => $route){
+            // Если мы нашли нужную связку -> возвращаем новый контроллер
+            if($request === $temp_request && $route['method'] === $temp_method){
+                // Получаем пришедшие параметры запроса
+                $temp_options = ($temp_method === "get") ? $_GET : $_POST;
+                return new Route($route["controller"], $route["action"], $route["access_level"], $temp_options, $route["options"]);
+            }
         }
-        $class_object = new $class_name();
-        // Проверяем существует ли запрашиваемый метод
-        if(!method_exists($class_object, $temp_method)){
-            Answer::error("Request method '{$temp_method}' is missing. Check documentation for cute api ver. {$version}!");
-        }
-        return new Route($class_name, $temp_method);
+        return new Route(new \App\Version\b001\Error\Controller(), "page404");
     }
 }
